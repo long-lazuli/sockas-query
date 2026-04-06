@@ -18,12 +18,13 @@
     "src"
   ],
   "scripts": {
+    "clean": "rm -rf ./dist ./coverage",
+    "compile": "tsc --build",
     "build": "tsup --tsconfig tsconfig.prod.json",
     "test:lib": "vitest run",
     "test:lib:dev": "vitest",
     "test:types": "tsc --noEmit",
-    "test:eslint": "eslint ./src",
-    "clean": "rm -rf ./dist ./coverage"
+    "test:eslint": "eslint ./src"
   },
   "peerDependencies": {
     "@tanstack/react-query": ">=5.0.0",
