@@ -3,6 +3,7 @@ import { RoomSelector } from './components/RoomSelector'
 import { MessageList } from './components/MessageList'
 import { MessageInput } from './components/MessageInput'
 import { SocketListener } from './components/SocketListener'
+import { UserRename } from './components/UserRename'
 
 export default function App() {
   const [roomId, setRoomId] = useState('general')
@@ -19,31 +20,22 @@ export default function App() {
         padding: '0 1rem',
       }}
     >
-      <h1 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
+      <h1 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>
         sockas-query chat demo
       </h1>
 
-      <div style={{ marginBottom: '0.5rem' }}>
-        <label>
-          Your name:{' '}
-          <input
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            style={{ fontFamily: 'monospace', padding: '0.2rem 0.4rem' }}
-          />
-        </label>
+      <div style={{ marginBottom: '0.25rem', fontSize: '0.85rem' }}>
+        Chatting as: <strong>{author}</strong>
       </div>
 
-      {/* Pattern 2: change room → onSuccess invalidates new room's messages */}
+      <UserRename author={author} onRenamed={setAuthor} />
+
       <RoomSelector roomId={roomId} onRoomChange={setRoomId} />
 
-      {/* Pattern 1: useSockAsQuery invalidates useQuery on socket event */}
       <SocketListener roomId={roomId} />
 
-      {/* useQuery: fetches messages list */}
       <MessageList roomId={roomId} />
 
-      {/* useSockAsMutation fire-and-forget */}
       <MessageInput roomId={roomId} author={author} />
     </div>
   )

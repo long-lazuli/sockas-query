@@ -57,6 +57,28 @@ app.get('/rooms/:roomId/messages', (req, res) => {
   }, 300)
 })
 
+app.post('/users/rename', (req, res) => {
+  const { from, to } = req.body as { from: string; to: string }
+  if (!from || !to) {
+    res.status(400).json({ error: 'from and to are required' })
+    return
+  }
+
+  // Rename author across all rooms
+  for (const roomId of Object.keys(messages)) {
+    messages[roomId] = (messages[roomId] ?? []).map((msg) =>
+      msg.author === from ? { ...msg, author: to } : msg,
+    )
+  }
+
+  console.log(`renamed "${from}" → "${to}"`)
+
+  // Notify all clients — they invalidate their own cache
+  io.emit('users:renamed', { from, to })
+
+  res.json({ ok: true })
+})
+
 // ── Socket.io ─────────────────────────────────────────────────────────────────
 
 io.on('connection', (socket) => {

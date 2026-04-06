@@ -5,14 +5,10 @@ interface Props {
   roomId: string
 }
 
-// Pattern 1: listens to '{roomId}:message-sent' events.
-// When received, invalidates the useQuery for messages → MessageList refetches.
-// Shared key namespace: subscriptionKey[0] === 'chat' === socket name.
-// Factory maps ['chat', roomId, 'message-sent'] → event `roomId + ':' + 'message-sent'`
-// e.g. ['chat', 'general', 'message-sent'] → 'general:message-sent'
 export function SocketListener({ roomId }: Props) {
   const queryClient = useQueryClient()
 
+  // Room-scoped: listens for new messages in current room
   const { isListening } = useSockAsQuery<
     unknown,
     { roomId: string },
@@ -20,10 +16,23 @@ export function SocketListener({ roomId }: Props) {
   >({
     subscriptionKey: ['chat', roomId, 'message-sent'],
     onReception: (_prev, event) => {
-      // Invalidate the message list — triggers MessageList to refetch
       void queryClient.invalidateQueries({
         queryKey: ['chat', event.roomId, 'messages'],
       })
+      return event
+    },
+  })
+
+  // Global: listens for username renames — invalidates all chat cache
+  // TanStack Query refetches only the currently active room query
+  useSockAsQuery<
+    unknown,
+    { from: string; to: string },
+    { from: string; to: string }
+  >({
+    subscriptionKey: ['chat', 'users', 'renamed'],
+    onReception: (_prev, event) => {
+      void queryClient.invalidateQueries({ queryKey: ['chat'] })
       return event
     },
   })

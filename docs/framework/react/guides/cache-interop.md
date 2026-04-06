@@ -101,3 +101,64 @@ const users = useSockAsQuery({ subscriptionKey: ['users', 'list'] })
 ```
 
 A push on `chatSocket` only updates entries under the `'chat'` namespace. A push on `usersSocket` only updates entries under `'users'`. There is no cross-contamination between namespaces.
+
+## Combining HTTP Mutations with Socket Broadcasts
+
+Some operations (e.g. renaming a user) are best expressed as HTTP mutations that trigger server-side socket broadcasts. The server processes the mutation and then emits an event to all connected clients; each client uses `useSockAsQuery` to react to that broadcast and invalidate its own cache. TanStack Query then refetches only the currently active (mounted) queries.
+
+```tsx
+// Server emits 'users:renamed' after renaming a user across all rooms.
+// subscriptionKey ['chat', 'users', 'renamed']
+// → subscribe factory maps slice(1).join(':') → 'users:renamed'
+
+function SocketListener() {
+  const queryClient = useQueryClient()
+
+  // Global broadcast listener — not scoped to a room
+  useSockAsQuery<
+    unknown,
+    { from: string; to: string },
+    { from: string; to: string }
+  >({
+    subscriptionKey: ['chat', 'users', 'renamed'],
+    onReception: (_prev, event) => {
+      // Invalidate ALL chat cache — TanStack Query refetches only active queries
+      void queryClient.invalidateQueries({ queryKey: ['chat'] })
+      return event
+    },
+  })
+
+  // ...
+}
+
+function RenameForm({
+  author,
+  onRenamed,
+}: {
+  author: string
+  onRenamed: (name: string) => void
+}) {
+  const { mutate: rename } = useMutation({
+    mutationFn: (vars: { from: string; to: string }) =>
+      fetch('/api/users/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      }).then((r) => r.json()),
+    // No onSuccess cache invalidation here — the socket broadcast handles it
+    onSuccess: () => onRenamed(newName),
+  })
+
+  return (
+    <button onClick={() => rename({ from: author, to: newName })}>
+      Rename
+    </button>
+  )
+}
+```
+
+Key properties of this pattern:
+
+- **No optimistic updates needed.** The server confirms the rename and broadcasts to all clients simultaneously.
+- **Only active queries refetch.** `invalidateQueries({ queryKey: ['chat'] })` marks all `['chat', ...]` entries as stale, but TanStack Query only immediately refetches queries that are currently mounted. Inactive queries are marked stale and will refetch when they next become active.
+- **All connected clients stay in sync.** Because the server broadcasts the event, every client's `useSockAsQuery` listener fires and invalidates its own cache independently.
