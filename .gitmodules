@@ -1,0 +1,3 @@
+[submodule "externals/tanstack-query"]
+	path = externals/tanstack-query
+	url = https://github.com/tanstack/query.git
