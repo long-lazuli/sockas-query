@@ -8,7 +8,7 @@ title: Subscriptions
 A subscription is a declarative dependency on a real-time socket event. It is tied to a **unique key** — the same key system used by `useQuery`.
 
 ```tsx
-import { useSockAsQuery } from '@sockas/react-query'
+import { useSockAsQuery } from '@sockas-query/react'
 
 function UserStatus({ userId }: { userId: string }) {
   const { data, isListening } = useSockAsQuery({

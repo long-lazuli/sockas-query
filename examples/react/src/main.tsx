@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { SockasProvider } from '@sockas/react-query'
+import { SockasProvider } from '@sockas-query/react'
 import { socket } from './socket'
 import App from './App'
 

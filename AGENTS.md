@@ -103,13 +103,13 @@ docs/                        ← documentation (you maintain this)
 
 ## Package names
 
-- Core (framework-agnostic): `@sockas/query-core` (in `packages/sockas-query-core/`)
-- React bindings: `@sockas/react-query` (in `packages/react-sockas-query/`)
+- Core (framework-agnostic): `@sockas-query/core` (in `packages/sockas-query-core/`)
+- React bindings: `@sockas-query/react` (in `packages/react-sockas-query/`)
 
 ## What goes where
 
 - **`sockas-query-core`**: `SubscriptionManager`, pure types, framework-agnostic logic — no React imports
-- **`react-sockas-query`**: `SockasProvider`, `useSockAsQuery`, `useSockAsMutation` — depends on `@sockas/query-core`
+- **`react-sockas-query`**: `SockasProvider`, `useSockAsQuery`, `useSockAsMutation` — depends on `@sockas-query/core`
 
 This mirrors TanStack Query's own `query-core` / `react-query` split exactly.
 

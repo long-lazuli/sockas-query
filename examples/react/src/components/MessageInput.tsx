@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSockAsMutation } from '@sockas/react-query'
+import { useSockAsMutation } from '@sockas-query/react'
 import { socket } from '../socket'
 
 interface Props {

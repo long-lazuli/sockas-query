@@ -18,9 +18,9 @@ manager.subscribe()
 manager.unsubscribe()
 ```
 
-`SubscriptionManager` is a framework-agnostic class that manages the lifecycle of a single socket subscription. It lives in `@sockas/query-core` and has no React dependencies.
+`SubscriptionManager` is a framework-agnostic class that manages the lifecycle of a single socket subscription. It lives in `@sockas-query/core` and has no React dependencies.
 
-It is used internally by `useSockAsQuery` (in `@sockas/react-query`), but can be used directly in any environment that manages its own state lifecycle.
+It is used internally by `useSockAsQuery` (in `@sockas-query/react`), but can be used directly in any environment that manages its own state lifecycle.
 
 ## Constructor Options
 

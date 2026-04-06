@@ -1,5 +1,5 @@
 {
-  "name": "@sockas/react-query",
+  "name": "@sockas-query/react",
   "version": "0.0.1",
   "description": "Transport-agnostic WebSocket adapter for TanStack Query",
   "type": "module",

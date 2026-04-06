@@ -10,7 +10,7 @@ title: Mutations
 ## Basic Usage
 
 ```tsx
-import { useSockAsMutation } from '@sockas/react-query'
+import { useSockAsMutation } from '@sockas-query/react'
 
 function SendButton() {
   const { send, isPending } = useSockAsMutation({
@@ -70,7 +70,7 @@ A common pattern is to invalidate a TanStack Query cache entry after a successfu
 
 ```tsx
 import { useQueryClient } from '@tanstack/react-query'
-import { useSockAsMutation } from '@sockas/react-query'
+import { useSockAsMutation } from '@sockas-query/react'
 
 function UpdateProfile() {
   const queryClient = useQueryClient()

@@ -9,7 +9,7 @@ title: Provider Setup
 
 ```tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { SockasProvider } from '@sockas/react-query'
+import { SockasProvider } from '@sockas-query/react'
 import { io } from 'socket.io-client'
 
 const queryClient = new QueryClient()

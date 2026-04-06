@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useSockAsMutation } from '@sockas/react-query'
+import { useSockAsMutation } from '@sockas-query/react'
 import { socket } from '../socket'
 
 type Room = { id: string; name: string }

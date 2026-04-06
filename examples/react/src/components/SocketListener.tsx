@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useSockAsQuery } from '@sockas/react-query'
+import { useSockAsQuery } from '@sockas-query/react'
 
 interface Props {
   roomId: string
