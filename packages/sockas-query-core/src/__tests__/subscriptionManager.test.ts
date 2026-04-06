@@ -23,10 +23,12 @@ function mockSocket() {
 
 type MockSocket = ReturnType<typeof mockSocket>
 
-function makeFactory(eventName: string): SubscribeFactory<MockSocket> {
+function makeFactory<TMessage = unknown>(
+  eventName: string,
+): SubscribeFactory<MockSocket, TMessage> {
   return (socket, _key, emit) => {
-    socket.on(eventName, emit)
-    return () => socket.off(eventName, emit)
+    socket.on(eventName, emit as (msg: unknown) => void)
+    return () => socket.off(eventName, emit as (msg: unknown) => void)
   }
 }
 
@@ -65,7 +67,7 @@ describe('SubscriptionManager', () => {
       key: ['chat', 'messages'],
       socketName: 'chat',
       socket,
-      factory: makeFactory('msg'),
+      factory: makeFactory<string>('msg'),
       onReception: (prev = [], msg: string) =>
         [...(prev as string[]), msg] as string[],
       onData,
