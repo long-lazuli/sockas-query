@@ -89,17 +89,29 @@ A task is NOT done until:
 ## Project structure
 
 ```
-externals/tanstack-query/   ← git submodule, source as documentation — never modify
-packages/react-sockas-query/ ← library source
-  src/
-  src/__tests__/
-examples/react/             ← React example app
-docs/                       ← documentation (you maintain this)
+externals/tanstack-query/    ← git submodule, source as documentation — never modify
+packages/
+  sockas-query-core/         ← framework-agnostic core (mirrors tanstack/query-core)
+    src/
+    src/__tests__/
+  react-sockas-query/        ← React bindings (mirrors tanstack/react-query)
+    src/
+    src/__tests__/
+examples/react/              ← React example app
+docs/                        ← documentation (you maintain this)
 ```
 
-## Package name
+## Package names
 
-The library package is `@sockas/react-query` (in `packages/react-sockas-query/`).
+- Core (framework-agnostic): `@sockas/query-core` (in `packages/sockas-query-core/`)
+- React bindings: `@sockas/react-query` (in `packages/react-sockas-query/`)
+
+## What goes where
+
+- **`sockas-query-core`**: `SubscriptionManager`, pure types, framework-agnostic logic — no React imports
+- **`react-sockas-query`**: `SockasProvider`, `useSockAsQuery`, `useSockAsMutation` — depends on `@sockas/query-core`
+
+This mirrors TanStack Query's own `query-core` / `react-query` split exactly.
 
 ## Tech stack
 
