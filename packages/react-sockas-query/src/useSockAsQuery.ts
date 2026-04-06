@@ -74,8 +74,8 @@ export function useSockAsQuery<
       cleanup()
       setIsListening(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only re-subscribe on socket name or enabled change
-  }, [enabled, subscriptionKey[0]])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- key serialized to detect any segment change
+  }, [enabled, JSON.stringify(subscriptionKey)])
 
   // Subscribe to the TQ cache so the component re-renders when setQueryData is called.
   // useSyncExternalStore ensures concurrent-safe subscriptions to external stores.
@@ -94,8 +94,9 @@ export function useSockAsQuery<
           }
         })
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- subscriptionKey identity managed by caller
-      [queryCache, queryClient, subscriptionKey[0]],
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- key serialized to detect any segment change
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [queryCache, queryClient, JSON.stringify(subscriptionKey)],
     ),
     () => queryClient.getQueryData<TData>(subscriptionKey) ?? initialData,
     () => queryClient.getQueryData<TData>(subscriptionKey) ?? initialData,

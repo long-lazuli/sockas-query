@@ -172,6 +172,45 @@ describe('useSockAsQuery', () => {
     expect(socket.on).not.toHaveBeenCalled()
   })
 
+  it('re-subscribes when subscriptionKey changes (e.g. room change)', async () => {
+    const { socket, Wrapper } = setup()
+    const received: string[] = []
+
+    function Page({ roomId }: { roomId: string }) {
+      useSockAsQuery<MockSocket, string, string>({
+        subscriptionKey: ['chat', roomId],
+        onReception: (_prev, msg) => {
+          received.push(`${roomId}:${msg}`)
+          return msg
+        },
+      })
+      return <span data-testid="room">{roomId}</span>
+    }
+
+    const { rerender } = render(<Page roomId="general" />, { wrapper: Wrapper })
+    await act(async () => {})
+
+    // message in general — should be received
+    act(() => {
+      socket.push('message', 'hello-general')
+    })
+    expect(received).toEqual(['general:hello-general'])
+
+    // switch to random
+    rerender(<Page roomId="random" />)
+    await act(async () => {})
+
+    // old subscription cleaned up — message on 'message' event still fires
+    // but onReception now captures roomId='random'
+    act(() => {
+      socket.push('message', 'hello-random')
+    })
+    expect(received).toEqual(['general:hello-general', 'random:hello-random'])
+
+    // old listener must have been cleaned up (off called once when switching)
+    expect(socket.off).toHaveBeenCalledTimes(1)
+  })
+
   it('uses per-hook subscribe override when provided', async () => {
     const { socket, Wrapper } = setup()
     const customOn = vi.fn()
