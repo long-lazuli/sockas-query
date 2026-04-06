@@ -17,20 +17,17 @@ export function RoomSelector({ roomId, onRoomChange }: Props) {
     queryFn: () => fetch('/api/rooms').then((r) => r.json()),
   })
 
-  // Pattern 2: change room → onSuccess explicitly invalidates new room's messages
-  const { send: joinRoom, isPending } = useSockAsMutation<
+  const { send: joinRoom } = useSockAsMutation<
     typeof socket,
     { newRoomId: string },
     void
   >({
     socketName: 'chat',
     emit: (sock, { newRoomId }) => {
-      // fire-and-forget join notification (server could use this for presence)
       sock.emit('join-room', { newRoomId })
     },
     onSuccess: (_data, { newRoomId }) => {
       onRoomChange(newRoomId)
-      // Explicit invalidation — not shared-key, intentional refetch of new room
       void queryClient.invalidateQueries({
         queryKey: ['chat', newRoomId, 'messages'],
       })
@@ -38,23 +35,22 @@ export function RoomSelector({ roomId, onRoomChange }: Props) {
   })
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <strong>Room: </strong>
+    <ul className="space-y-0.5">
       {rooms.map((room) => (
-        <button
-          key={room.id}
-          onClick={() => joinRoom({ newRoomId: room.id })}
-          disabled={isPending || room.id === roomId}
-          style={{
-            marginRight: '0.5rem',
-            fontWeight: room.id === roomId ? 'bold' : 'normal',
-            textDecoration: room.id === roomId ? 'underline' : 'none',
-            cursor: room.id === roomId ? 'default' : 'pointer',
-          }}
-        >
-          {room.name}
-        </button>
+        <li key={room.id}>
+          <button
+            onClick={() => joinRoom({ newRoomId: room.id })}
+            disabled={room.id === roomId}
+            className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+              room.id === roomId
+                ? 'bg-gray-700 text-white font-semibold'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            # {room.id}
+          </button>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }

@@ -8,7 +8,6 @@ interface Props {
 export function SocketListener({ roomId }: Props) {
   const queryClient = useQueryClient()
 
-  // Room-scoped: listens for new messages in current room
   const { isListening } = useSockAsQuery<
     unknown,
     { roomId: string },
@@ -23,8 +22,6 @@ export function SocketListener({ roomId }: Props) {
     },
   })
 
-  // Global: listens for username renames — invalidates all chat cache
-  // TanStack Query refetches only the currently active room query
   useSockAsQuery<
     unknown,
     { from: string; to: string },
@@ -38,8 +35,13 @@ export function SocketListener({ roomId }: Props) {
   })
 
   return (
-    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>
-      socket: {isListening ? '🟢 connected' : '🔴 connecting...'}
-    </div>
+    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+      <span
+        className={`inline-block w-2 h-2 rounded-full ${
+          isListening ? 'bg-green-500' : 'bg-gray-400'
+        }`}
+      />
+      {isListening ? 'live' : 'connecting...'}
+    </span>
   )
 }

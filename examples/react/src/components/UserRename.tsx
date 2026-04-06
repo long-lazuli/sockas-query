@@ -8,6 +8,7 @@ interface Props {
 
 export function UserRename({ author, onRenamed }: Props) {
   const [newName, setNewName] = useState('')
+  const [open, setOpen] = useState(false)
 
   const { mutate: rename, isPending } = useMutation({
     mutationFn: (vars: { from: string; to: string }) =>
@@ -19,6 +20,7 @@ export function UserRename({ author, onRenamed }: Props) {
     onSuccess: () => {
       onRenamed(newName.trim())
       setNewName('')
+      setOpen(false)
     },
   })
 
@@ -28,26 +30,45 @@ export function UserRename({ author, onRenamed }: Props) {
     rename({ from: author, to: trimmed })
   }
 
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs text-gray-500 hover:text-gray-300 mt-1 transition-colors"
+      >
+        Change name
+      </button>
+    )
+  }
+
   return (
-    <div style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+    <div className="mt-2 space-y-1">
       <input
+        autoFocus
         value={newName}
         onChange={(e) => setNewName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-        placeholder={`Rename "${author}" to...`}
-        disabled={isPending}
-        style={{
-          fontFamily: 'monospace',
-          padding: '0.2rem 0.4rem',
-          marginRight: '0.4rem',
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleRename()
+          if (e.key === 'Escape') setOpen(false)
         }}
+        placeholder="New name..."
+        className="w-full px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 border border-gray-600 focus:outline-none focus:border-blue-500"
       />
-      <button onClick={handleRename} disabled={isPending || !newName.trim()}>
-        {isPending ? 'Renaming...' : 'Rename'}
-      </button>
-      <span style={{ color: '#aaa', marginLeft: '0.5rem' }}>
-        (server renames in all rooms, all clients refresh)
-      </span>
+      <div className="flex gap-1">
+        <button
+          onClick={handleRename}
+          disabled={isPending || !newName.trim()}
+          className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded py-1 transition"
+        >
+          {isPending ? '...' : 'OK'}
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="flex-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded py-1 transition"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }

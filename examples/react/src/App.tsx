@@ -12,31 +12,48 @@ export default function App() {
   )
 
   return (
-    <div
-      style={{
-        fontFamily: 'monospace',
-        maxWidth: 640,
-        margin: '2rem auto',
-        padding: '0 1rem',
-      }}
-    >
-      <h1 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-        sockas-query chat demo
-      </h1>
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div className="w-56 bg-gray-900 text-gray-100 flex flex-col">
+        <div className="p-4 border-b border-gray-700">
+          <h1 className="font-bold text-lg">sockas-query</h1>
+          <p className="text-xs text-gray-400 mt-1">chat demo</p>
+        </div>
 
-      <div style={{ marginBottom: '0.25rem', fontSize: '0.85rem' }}>
-        Chatting as: <strong>{author}</strong>
+        {/* Rooms */}
+        <div className="flex-1 overflow-y-auto p-2">
+          <p className="text-xs text-gray-500 uppercase tracking-wider px-2 py-1">
+            Rooms
+          </p>
+          <RoomSelector roomId={roomId} onRoomChange={setRoomId} />
+        </div>
+
+        {/* Identity */}
+        <div className="p-3 border-t border-gray-700">
+          <p className="text-xs text-gray-400 mb-1">Chatting as</p>
+          <p className="text-sm font-semibold truncate">{author}</p>
+          <UserRename author={author} onRenamed={setAuthor} />
+        </div>
       </div>
 
-      <UserRename author={author} onRenamed={setAuthor} />
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="h-12 bg-white border-b flex items-center justify-between px-4 shadow-sm">
+          <span className="font-semibold text-gray-700">#{roomId}</span>
+          <SocketListener roomId={roomId} />
+        </div>
 
-      <RoomSelector roomId={roomId} onRoomChange={setRoomId} />
+        {/* Messages */}
+        <div className="flex-1 overflow-hidden">
+          <MessageList roomId={roomId} author={author} />
+        </div>
 
-      <SocketListener roomId={roomId} />
-
-      <MessageList roomId={roomId} />
-
-      <MessageInput roomId={roomId} author={author} />
+        {/* Input */}
+        <div className="bg-white border-t p-3">
+          <MessageInput roomId={roomId} author={author} />
+        </div>
+      </div>
     </div>
   )
 }
