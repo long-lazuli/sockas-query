@@ -1,0 +1,45 @@
+{
+  "name": "@sockas/react-query",
+  "version": "0.0.1",
+  "description": "Transport-agnostic WebSocket adapter for TanStack Query",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup --tsconfig tsconfig.prod.json",
+    "test:lib": "vitest run",
+    "test:lib:dev": "vitest",
+    "test:types": "tsc --noEmit",
+    "test:eslint": "eslint ./src",
+    "clean": "rm -rf ./dist ./coverage"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": ">=5.0.0",
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^18.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "jsdom": "^25.0.0",
+    "react": "^18.0.0",
+    "tsup": "^8.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}
