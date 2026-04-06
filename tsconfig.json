@@ -7,10 +7,10 @@
     "jsx": "react-jsx",
     "strict": true,
     "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
     "skipLibCheck": true
   },
   "include": ["src"]
