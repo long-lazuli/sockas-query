@@ -1,6 +1,7 @@
 export { SockasProvider } from './SockasProvider'
 export { useSockasContext } from './context'
 export { useSockAsQuery } from './useSockAsQuery'
+export { useSockAsMutation } from './useSockAsMutation'
 export type {
   SockasProviderProps,
   SockasContextValue,
@@ -9,4 +10,6 @@ export type {
   SocketsMap,
   UseSockAsQueryOptions,
   UseSockAsQueryResult,
+  UseSockAsMutationOptions,
+  UseSockAsMutationResult,
 } from './types'
