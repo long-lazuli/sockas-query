@@ -6,6 +6,7 @@ import {
   QueryClientProvider,
   useQuery,
   useQueryClient,
+  useMutation,
 } from '@tanstack/react-query'
 import { SockasProvider } from '../SockasProvider'
 import { useSockAsQuery } from '../useSockAsQuery'
@@ -23,8 +24,14 @@ function setup() {
     return (
       <QueryClientProvider client={queryClient}>
         <SockasProvider
-          sockets={{ users: socket }}
-          subscribe={{ users: mockSubscribeFactory('update') }}
+          sockets={{ chat: socket }}
+          subscribe={{
+            chat: (sock, key, emit) => {
+              const event = (key as string[]).slice(1).join(':')
+              sock.on(event, emit)
+              return () => sock.off(event, emit)
+            },
+          }}
         >
           {children}
         </SockasProvider>
@@ -45,74 +52,194 @@ describe('integration', () => {
     function Page() {
       const qc = useQueryClient()
       const { data } = useQuery({
-        queryKey: ['users', '1'],
+        queryKey: ['chat', 'general', 'messages'],
         queryFn: () => {
           fetchCount++
-          return Promise.resolve({ name: `fetch-${fetchCount}` })
+          return Promise.resolve([{ text: `fetch-${fetchCount}` }])
         },
       })
       useSockAsQuery({
-        subscriptionKey: ['users', 'events'],
-        onReception: (prev, msg) => {
-          qc.invalidateQueries({ queryKey: ['users', '1'] })
+        subscriptionKey: ['chat', 'general', 'message-sent'],
+        onReception: (_prev, msg) => {
+          void qc.invalidateQueries({
+            queryKey: ['chat', 'general', 'messages'],
+          })
           return msg
         },
       })
-      return <div data-testid="name">{data?.name ?? 'loading'}</div>
+      return <div data-testid="count">{data?.length ?? 0}</div>
     }
 
     render(<Page />, { wrapper: Wrapper })
     await waitFor(() =>
-      expect(screen.getByTestId('name').textContent).toBe('fetch-1'),
+      expect(screen.getByTestId('count').textContent).toBe('1'),
     )
 
+    // Server pushes 'general:message-sent' after a client sends a message
     act(() => {
-      socket.push('update', { event: 'user-changed' })
+      socket.push('general:message-sent', { roomId: 'general' })
     })
-    await waitFor(() =>
-      expect(screen.getByTestId('name').textContent).toBe('fetch-2'),
-    )
-    expect(fetchCount).toBe(2)
+    await waitFor(() => expect(fetchCount).toBe(2))
   })
 
-  it('useSockAsMutation send triggers useSockAsQuery cache update', async () => {
-    const { socket, Wrapper } = setup()
+  it('useSockAsMutation fire-and-forget → server pushes back → useQuery refetches', async () => {
+    // Real chain: client emits via socket → server processes → server broadcasts
+    // → useSockAsQuery.onReception → invalidate → useQuery refetches
+    const { socket, queryClient, Wrapper } = setup()
+    let fetchCount = 0
+    const sentToServer: unknown[] = []
 
     function Page() {
-      const { data } = useSockAsQuery<
-        MockSocket,
-        { name: string },
-        { name: string }
-      >({
-        subscriptionKey: ['users', 'profile'],
+      const qc = useQueryClient()
+      const { data } = useQuery({
+        queryKey: ['chat', 'general', 'messages'],
+        queryFn: () => {
+          fetchCount++
+          return Promise.resolve([{ id: fetchCount, text: 'msg' }])
+        },
       })
-      const { send } = useSockAsMutation<
-        MockSocket,
-        Record<string, never>,
-        void
-      >({
-        socketName: 'users',
-        emit: (s) => {
-          ;(s as MockSocket).push('update', { name: 'Updated' })
+      // Listens for server confirmation
+      useSockAsQuery({
+        subscriptionKey: ['chat', 'general', 'message-sent'],
+        onReception: (_prev, event) => {
+          void qc.invalidateQueries({
+            queryKey: ['chat', 'general', 'messages'],
+          })
+          return event
+        },
+      })
+      // Fire-and-forget send
+      const { send } = useSockAsMutation<MockSocket, { text: string }, void>({
+        socketName: 'chat',
+        emit: (_sock, vars) => {
+          // Client sends to server — capture what was sent
+          sentToServer.push(vars)
+          // No return = fire-and-forget; server push simulated separately below
         },
       })
       return (
         <div>
-          <span data-testid="name">{data?.name ?? 'none'}</span>
-          <button onClick={() => send({})}>update</button>
+          <span data-testid="count">{data?.length ?? 0}</span>
+          <button onClick={() => send({ text: 'hello' })}>send</button>
         </div>
       )
     }
 
     render(<Page />, { wrapper: Wrapper })
-    await act(async () => {})
+    await waitFor(() =>
+      expect(screen.getByTestId('count').textContent).toBe('1'),
+    )
+    expect(fetchCount).toBe(1)
 
+    // User clicks send
     act(() => {
       screen.getByRole('button').click()
     })
+    expect(sentToServer).toHaveLength(1)
+
+    // Server processes and broadcasts back (simulated)
+    act(() => {
+      socket.push('general:message-sent', { roomId: 'general' })
+    })
+    await waitFor(() => expect(fetchCount).toBe(2))
+  })
+
+  it('rename: HTTP mutation → server pushes users:renamed → invalidates all chat → only active query refetches', async () => {
+    const { socket, Wrapper } = setup()
+    let generalFetchCount = 0
+    let randomFetchCount = 0
+
+    // Mock fetch for the rename POST
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    function Page() {
+      const qc = useQueryClient()
+
+      // Active query — mounted, will refetch on invalidation
+      const { data: generalMessages } = useQuery({
+        queryKey: ['chat', 'general', 'messages'],
+        queryFn: () => {
+          generalFetchCount++
+          return Promise.resolve([{ author: 'alice', text: 'hi' }])
+        },
+      })
+
+      // Inactive query — not mounted, should NOT refetch immediately
+      // (only becomes active when user switches room)
+      void useQuery({
+        queryKey: ['chat', 'random', 'messages'],
+        queryFn: () => {
+          randomFetchCount++
+          return Promise.resolve([])
+        },
+        enabled: false, // simulate inactive — not currently viewed
+      })
+
+      // Listen for server-pushed rename event (global, not room-scoped)
+      // key ['chat', 'users', 'renamed'] → factory maps to event 'users:renamed'
+      useSockAsQuery({
+        subscriptionKey: ['chat', 'users', 'renamed'],
+        onReception: (_prev, event) => {
+          // Invalidate ALL chat cache — TQ refetches only active queries
+          void qc.invalidateQueries({ queryKey: ['chat'] })
+          return event
+        },
+      })
+
+      // Standard TQ useMutation — HTTP, not socket
+      const { mutate: rename, isPending } = useMutation({
+        mutationFn: (vars: { from: string; to: string }) =>
+          fetch('/api/users/rename', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(vars),
+          }).then((r) => r.json()),
+        // No onSuccess cache work — socket handles invalidation
+      })
+
+      return (
+        <div>
+          <span data-testid="general-count">
+            {generalMessages?.length ?? 0}
+          </span>
+          <button
+            onClick={() => rename({ from: 'alice', to: 'bob' })}
+            disabled={isPending}
+          >
+            rename
+          </button>
+        </div>
+      )
+    }
+
+    render(<Page />, { wrapper: Wrapper })
     await waitFor(() =>
-      expect(screen.getByTestId('name').textContent).toBe('Updated'),
+      expect(screen.getByTestId('general-count').textContent).toBe('1'),
     )
+    expect(generalFetchCount).toBe(1)
+    expect(randomFetchCount).toBe(0) // inactive, never fetched
+
+    // User clicks rename → HTTP POST resolves
+    act(() => {
+      screen.getByRole('button').click()
+    })
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+
+    // Server pushes 'users:renamed' after processing rename
+    act(() => {
+      socket.push('users:renamed', { from: 'alice', to: 'bob' })
+    })
+
+    // Active query refetches
+    await waitFor(() => expect(generalFetchCount).toBe(2))
+    // Inactive query was invalidated but NOT refetched
+    expect(randomFetchCount).toBe(0)
+
+    vi.unstubAllGlobals()
   })
 
   it('multiple sockets maintain independent cache namespaces', async () => {
